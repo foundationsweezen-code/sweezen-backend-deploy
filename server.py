@@ -16,13 +16,11 @@ load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB
 mongo_url = os.environ['MONGO_URL']
-# Add SSL/TLS options for Python 3.14+ compatibility
+# PyMongo 4.6.1 with Python 3.14 compatibility
 client = AsyncIOMotorClient(
     mongo_url,
-    ssl=True,
-    ssl_cert_reqs='CERT_REQUIRED',
-    retryWrites=False,
     serverSelectionTimeoutMS=15000,
+    retryWrites=False,
 )
 db = client[os.environ['DB_NAME']]
 
