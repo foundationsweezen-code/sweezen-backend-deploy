@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-import os, uuid, logging, bcrypt, jwt, razorpay, io, csv, time, re
+import os, uuid, logging, bcrypt, jwt, razorpay, io, csv, time, re, ssl
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from pdf_utils import generate_80g_receipt_pdf, generate_csr1_report_pdf, generate_donation_report_pdf, generate_volunteer_id_card_pdf
@@ -14,12 +14,20 @@ from pdf_utils import generate_80g_receipt_pdf, generate_csr1_report_pdf, genera
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB
+# MongoDB with Python 3.14 TLS configuration
 mongo_url = os.environ['MONGO_URL']
-# PyMongo 4.6.1 with Python 3.14 compatibility
+# Create SSL context for Python 3.14 compatibility
+ssl_context = ssl.create_default_context()
+# Allow Python 3.14 to use TLSv1.2 and TLSv1.3
+ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+# PyMongo 4.6.1 with Motor 3.5.0 - Python 3.14.3 compatible
 client = AsyncIOMotorClient(
     mongo_url,
-    serverSelectionTimeoutMS=15000,
+    tlsCAFile=None,  # Use system CA bundle
+    serverSelectionTimeoutMS=20000,
+    connectTimeoutMS=20000,
+    socketTimeoutMS=20000,
     retryWrites=False,
 )
 db = client[os.environ['DB_NAME']]
