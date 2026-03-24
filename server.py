@@ -2622,110 +2622,18 @@ async def admin_review_early_release_request(request_id: str, payload: CsrEarlyR
     return {"message": f"Request {status}", "request": updated}
 
 # ─── SEED DATA ───
+# ─── SEED DATA ───
 @app.on_event("startup")
 async def seed_data():
-    if not SEED_DEMO_DATA:
-        logger.info("Skipping demo seed data (SEED_DEMO_DATA is false)")
-        await get_system_settings()
-        return
-    admin_exists = await db.users.find_one({"email": "admin@sweezen.org"})
-    super_admin_exists = await db.users.find_one({"email": "superadmin@sweezen.org"})
-    tasks_exist = await db.tasks.count_documents({})
-    datasets_exist = await db.datasets.count_documents({})
-    await get_system_settings()
-    
-    if admin_exists and super_admin_exists and tasks_exist > 0 and datasets_exist > 0:
-        return
-    logger.info("Seeding initial data...")
-    if not super_admin_exists:
-        super_admin_password = get_seed_password("SEED_SUPERADMIN_PASSWORD", "super admin")
-        super_admin_user = {
-            "id": str(uuid.uuid4()), "name": "Sweezen Super Admin", "email": "superadmin@sweezen.org",
-            "password_hash": hash_password(super_admin_password), "phone": "+91-9876543200",
-            "role": "super_admin", "status": "active", "impact_points": 0, "hours_logged": 0, "badges": [],
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(super_admin_user)
-    if not admin_exists:
-        admin_password = get_seed_password("SEED_ADMIN_PASSWORD", "admin")
-        csr_password = get_seed_password("SEED_CSR_PASSWORD", "csr")
-        # Admin user
-        admin_user = {
-            "id": str(uuid.uuid4()), "name": "Sweezen Admin", "email": "admin@sweezen.org",
-            "password_hash": hash_password(admin_password), "phone": "+91-9876543210",
-            "role": "admin", "status": "active", "impact_points": 0, "hours_logged": 0, "badges": [],
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(admin_user)
-        # Sample CSR user
-        csr_user = {
-            "id": str(uuid.uuid4()), "name": "CSR Partner", "email": "csr@company.com",
-            "password_hash": hash_password(csr_password), "phone": "+91-9876543211",
-            "role": "csr_partner", "status": "active", "impact_points": 0, "hours_logged": 0, "badges": [],
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "csrProfile": default_csr_profile({
-                "companyName": "Sweezen CSR Corporate Partner",
-                "industry": "Technology",
-                "companySize": "500-5000",
-                "csrBudgetFY": 2000000,
-                "tier": "Gold",
-                "kycStatus": "verified",
-                "activeProjects": [],
-            }),
-        }
-        await db.users.insert_one(csr_user)
-        # Sample projects
-        projects = [
-        {"id": str(uuid.uuid4()), "title": "Rural Health Camps Initiative", "description": "Providing free medical check-ups and essential healthcare services to underserved rural communities across 5 districts. Our mobile health units travel to remote villages, offering preventive care, diagnostics, and health education.", "category": "healthcare", "location": "Uttar Pradesh, Bihar", "budget": 1500000, "raised": 980000, "beneficiary_count": 12500, "status": "active", "image_url": "https://images.unsplash.com/photo-1606309028742-4039c7b625b8?w=600", "milestones": [{"name": "Phase 1 - Setup", "status": "completed"}, {"name": "Phase 2 - Outreach", "status": "in_progress"}, {"name": "Phase 3 - Expansion", "status": "pending"}], "created_at": "2024-06-15T10:00:00+00:00", "updated_at": "2025-01-20T10:00:00+00:00", "created_by": admin_user["id"]},
-        {"id": str(uuid.uuid4()), "title": "Highway Driver Wellness Program", "description": "Dedicated health lounges and wellness check-ups for long-haul truck drivers at key highway rest stops. Addressing cardiovascular health, mental wellness, and nutrition for one of India's most overlooked workforce segments.", "category": "healthcare", "location": "National Highways - NH44, NH48", "budget": 800000, "raised": 520000, "beneficiary_count": 5200, "status": "active", "image_url": "https://images.unsplash.com/photo-1606309028742-4039c7b625b8?w=600", "milestones": [{"name": "Lounge Setup", "status": "completed"}, {"name": "Medical Staff Recruitment", "status": "completed"}, {"name": "Operations Launch", "status": "in_progress"}], "created_at": "2024-08-20T10:00:00+00:00", "updated_at": "2025-02-10T10:00:00+00:00", "created_by": admin_user["id"]},
-        {"id": str(uuid.uuid4()), "title": "Digital Literacy for Rural Youth", "description": "Empowering rural youth with essential digital skills through community learning centers. Covering basic computer literacy, internet safety, coding fundamentals, and career guidance in collaboration with local schools.", "category": "education", "location": "Madhya Pradesh, Rajasthan", "budget": 1200000, "raised": 870000, "beneficiary_count": 8500, "status": "active", "image_url": "https://images.unsplash.com/flagged/photo-1574097656146-0b43b7660cb6?w=600", "milestones": [{"name": "Center Setup", "status": "completed"}, {"name": "Curriculum Design", "status": "completed"}, {"name": "Enrollment Drive", "status": "in_progress"}, {"name": "Assessment Phase", "status": "pending"}], "created_at": "2024-04-10T10:00:00+00:00", "updated_at": "2025-01-15T10:00:00+00:00", "created_by": admin_user["id"]},
-        {"id": str(uuid.uuid4()), "title": "Women Skill Development Centers", "description": "Establishing skill development centers for women in underserved communities, providing training in tailoring, handicrafts, food processing, and entrepreneurship. Creating pathways to financial independence.", "category": "education", "location": "Odisha, Bihar", "budget": 900000, "raised": 650000, "beneficiary_count": 3200, "status": "active", "image_url": "https://images.unsplash.com/photo-1763733593326-758b2271d725?w=600", "milestones": [{"name": "Facility Setup", "status": "completed"}, {"name": "Training Programs", "status": "in_progress"}, {"name": "Market Linkage", "status": "pending"}], "created_at": "2024-09-05T10:00:00+00:00", "updated_at": "2025-02-01T10:00:00+00:00", "created_by": admin_user["id"]},
-        {"id": str(uuid.uuid4()), "title": "Community Reforestation Drive", "description": "Large-scale tree plantation drives across degraded forest lands and community spaces. Engaging volunteers and local communities in planting, nurturing, and monitoring native tree species for long-term ecological restoration.", "category": "environment", "location": "Uttarakhand, Himachal Pradesh", "budget": 600000, "raised": 420000, "beneficiary_count": 15000, "status": "active", "image_url": "https://images.unsplash.com/photo-1758390286700-06f93fddec45?w=600", "milestones": [{"name": "Land Identification", "status": "completed"}, {"name": "Sapling Procurement", "status": "completed"}, {"name": "Plantation Phase 1", "status": "in_progress"}, {"name": "Monitoring & Maintenance", "status": "pending"}], "created_at": "2024-03-22T10:00:00+00:00", "updated_at": "2025-01-28T10:00:00+00:00", "created_by": admin_user["id"]},
-        {"id": str(uuid.uuid4()), "title": "Clean Water & Sanitation Access", "description": "Installing water purification systems and sanitation facilities in rural villages lacking clean water access. Complemented by hygiene education programs to ensure sustainable community health outcomes.", "category": "environment", "location": "Jharkhand, Chhattisgarh", "budget": 1000000, "raised": 780000, "beneficiary_count": 9800, "status": "active", "image_url": "https://images.unsplash.com/photo-1758390286700-06f93fddec45?w=600", "milestones": [{"name": "Survey & Assessment", "status": "completed"}, {"name": "Installation Phase", "status": "in_progress"}, {"name": "Community Training", "status": "pending"}], "created_at": "2024-07-01T10:00:00+00:00", "updated_at": "2025-02-15T10:00:00+00:00", "created_by": admin_user["id"]},
-    ]
-    if not admin_exists:
-        await db.projects.insert_many(projects)
-        # Sample publications
-        publications = [
-            {"id": str(uuid.uuid4()), "title": "Annual Impact Report 2024-25", "content": "Sweezen Foundation's annual impact report showcasing our work across healthcare, education, and environmental sustainability. This year, we reached over 54,000 beneficiaries across 12 districts, deployed 6 active projects, and partnered with 8 CSR partners to create lasting change in underserved communities.", "type": "report", "image_url": "https://images.unsplash.com/photo-1758691736975-9f7f643d178e?w=600", "published": True, "author_id": admin_user["id"], "author_name": "Sweezen Admin", "created_at": "2025-01-15T10:00:00+00:00", "updated_at": "2025-01-15T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Building Bridges: How CSR Partnerships Transform Rural India", "content": "Corporate Social Responsibility is more than compliance. In this article, we explore how Sweezen Foundation's transparent CSR portal and real-time impact dashboards are helping companies move from obligation to genuine impact. With automated CSR-1 reporting and ESG-aligned metrics, our partners are seeing measurable social returns.", "type": "blog", "image_url": "https://images.unsplash.com/photo-1758691736975-9f7f643d178e?w=600", "published": True, "author_id": admin_user["id"], "author_name": "Sweezen Admin", "created_at": "2025-02-01T10:00:00+00:00", "updated_at": "2025-02-01T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Humanity Card: Dignity-First Beneficiary Identity", "content": "The Humanity Card is Sweezen Foundation's flagship innovation - a smart QR-based identity system that enables dignified, fraud-proof service delivery without requiring Aadhaar or sensitive documents. Learn how this technology is transforming beneficiary management across our projects.", "type": "news", "image_url": "https://images.unsplash.com/photo-1606309028742-4039c7b625b8?w=600", "published": True, "author_id": admin_user["id"], "author_name": "Sweezen Admin", "created_at": "2025-02-10T10:00:00+00:00", "updated_at": "2025-02-10T10:00:00+00:00"},
-        ]
-        await db.publications.insert_many(publications)
-        # Sample CSR partners
-        csr_partners = [
-            {"id": str(uuid.uuid4()), "user_id": csr_user["id"], "company_name": "TechCorp India", "contact_person": "Rahul Sharma", "email": "csr@company.com", "phone": "+91-9876543212", "tier": "gold", "funds_committed": 2000000, "funds_utilized": 1450000, "project_ids": [], "status": "active", "created_at": "2024-04-01T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "company_name": "GreenLeaf Industries", "contact_person": "Priya Patel", "email": "csr@greenleaf.co.in", "phone": "+91-9876543213", "tier": "silver", "funds_committed": 1000000, "funds_utilized": 680000, "project_ids": [], "status": "active", "created_at": "2024-06-15T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "company_name": "Bharat Finance Ltd", "contact_person": "Arun Kumar", "email": "csr@bharatfinance.com", "phone": "+91-9876543214", "tier": "platinum", "funds_committed": 5000000, "funds_utilized": 3200000, "project_ids": [], "status": "active", "created_at": "2024-02-10T10:00:00+00:00"},
-        ]
-        await db.csr_partners.insert_many(csr_partners)
-        # Sample donations
-        donations = [
-            {"id": str(uuid.uuid4()), "order_id": f"order_mock_{uuid.uuid4().hex[:12]}", "donor_name": "Amit Verma", "donor_email": "amit@gmail.com", "donor_phone": "+91-9988776655", "donor_pan": "ABCPV1234D", "amount": 5000, "project_id": projects[0]["id"], "is_recurring": False, "status": "completed", "payment_id": f"pay_mock_{uuid.uuid4().hex[:12]}", "receipt_number": f"SF-20250115-{uuid.uuid4().hex[:6].upper()}", "razorpay_mode": False, "created_at": "2025-01-15T14:30:00+00:00"},
-            {"id": str(uuid.uuid4()), "order_id": f"order_mock_{uuid.uuid4().hex[:12]}", "donor_name": "Sneha Iyer", "donor_email": "sneha@outlook.com", "donor_phone": "+91-8877665544", "donor_pan": "CDEPI5678F", "amount": 10000, "project_id": projects[2]["id"], "is_recurring": True, "status": "completed", "payment_id": f"pay_mock_{uuid.uuid4().hex[:12]}", "receipt_number": f"SF-20250201-{uuid.uuid4().hex[:6].upper()}", "razorpay_mode": False, "created_at": "2025-02-01T09:15:00+00:00"},
-            {"id": str(uuid.uuid4()), "order_id": f"order_mock_{uuid.uuid4().hex[:12]}", "donor_name": "Rajesh Gupta", "donor_email": "rajesh@company.com", "donor_phone": "+91-7766554433", "donor_pan": "FGHPG9012H", "amount": 25000, "project_id": projects[4]["id"], "is_recurring": False, "status": "completed", "payment_id": f"pay_mock_{uuid.uuid4().hex[:12]}", "receipt_number": f"SF-20250210-{uuid.uuid4().hex[:6].upper()}", "razorpay_mode": False, "created_at": "2025-02-10T16:45:00+00:00"},
-        ]
-        await db.donations.insert_many(donations)
+    """Application startup - skip seed data loading to prevent MongoDB connection issues."""
+    logger.info("Application startup - skipping seed data loading for reliability")
+    # The demo data and system settings initialization are disabled to:
+    # 1. Prevent startup failures if MongoDB is not immediately available
+    # 2. Allow the app to handle database connection retries gracefully
+    # 3. Enable health checks before database operations
+    return
 
-    # Seed volunteer tasks
-    if tasks_exist == 0:
-        tasks = [
-            {"id": str(uuid.uuid4()), "title": "Health Camp Volunteer - Lucknow", "description": "Assist medical team at rural health camp.", "category": "healthcare", "location": "Lucknow, UP", "lat": 26.85, "lng": 80.95, "date": "2025-03-15", "hours_required": 8, "skills_needed": ["communication", "first_aid"], "max_volunteers": 15, "applied": [], "status": "open", "created_at": "2025-02-20T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Digital Literacy Instructor", "description": "Teach basic computer skills to rural youth.", "category": "education", "location": "Bhopal, MP", "lat": 23.26, "lng": 77.41, "date": "2025-03-20", "hours_required": 6, "skills_needed": ["teaching", "computers"], "max_volunteers": 8, "applied": [], "status": "open", "created_at": "2025-02-22T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Tree Plantation Drive", "description": "Join our community reforestation drive.", "category": "environment", "location": "Dehradun, UK", "lat": 30.32, "lng": 78.03, "date": "2025-04-05", "hours_required": 5, "skills_needed": ["physical_fitness"], "max_volunteers": 30, "applied": [], "status": "open", "created_at": "2025-02-25T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Women Empowerment Workshop Facilitator", "description": "Facilitate skill development workshops for women.", "category": "education", "location": "Patna, Bihar", "lat": 25.61, "lng": 85.14, "date": "2025-03-25", "hours_required": 4, "skills_needed": ["teaching", "empathy"], "max_volunteers": 5, "applied": [], "status": "open", "created_at": "2025-03-01T10:00:00+00:00"},
-        ]
-        await db.tasks.insert_many(tasks)
 
-    # Seed researcher datasets
-    if datasets_exist == 0:
-        datasets = [
-            {"id": str(uuid.uuid4()), "title": "Healthcare Impact Data 2024-25", "description": "Anonymized data on healthcare program outcomes across 5 districts.", "type": "healthcare", "records": 12500, "format": "CSV", "size": "2.4 MB", "created_at": "2025-01-15T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Education Program Enrollment Data", "description": "Anonymized enrollment and completion rates for digital literacy programs.", "type": "education", "records": 8500, "format": "CSV", "size": "1.8 MB", "created_at": "2025-02-01T10:00:00+00:00"},
-            {"id": str(uuid.uuid4()), "title": "Environmental Impact Metrics", "description": "Tree survival rates, carbon offset estimates, and water quality measurements.", "type": "environment", "records": 5200, "format": "CSV", "size": "1.1 MB", "created_at": "2025-02-10T10:00:00+00:00"},
-        ]
-        await db.datasets.insert_many(datasets)
-    logger.info("Seed data created successfully")
 
 # ─── 80G RECEIPT PDF ───
 @api_router.get("/donations/{donation_id}/receipt-pdf")
